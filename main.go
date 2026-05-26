@@ -3,55 +3,76 @@ package main
 import (
 	"doom/assets"
 	"doom/drawer"
+	"doom/entity"
 	"doom/game"
+	"doom/level"
 	"doom/player"
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-var worldMap = [][]int{
-	{1, 1, 1, 1, 1, 1, 1, 1},
-	{1, 0, 0, 0, 0, 0, 0, 1},
-	{1, 0, 0, 0, 0, 0, 0, 1},
-	{1, 0, 0, 0, 0, 0, 0, 1},
-	{1, 0, 0, 2, 2, 0, 0, 1},
-	{1, 0, 0, 0, 0, 0, 0, 1},
-	{1, 0, 0, 0, 0, 0, 0, 1},
-	{1, 0, 0, 0, 0, 0, 0, 1},
-	{1, 1, 1, 1, 1, 1, 1, 1},
-}
-
 func main() {
-	textures, err := assets.LoadWallTextures(map[int]string{
-		1: "assets/player/PLAYA1.png",
-		2: "assets/monsters/SPOS/SPOSA1.png",
-	})
+	loadedLevel, err := level.LoadByName("level01")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	game := &game.Game{
-		Player: player.Player{
-			X:        3.5,
-			Y:        3.5,
-			Angle:    0,
-			Speed:    0.2,
-			Rotation: 0.1,
-		},
-		Drawer: drawer.Drawer{
-			Step:    0.05,
-			MaxDist: 20,
-		},
-		WorldMap:     worldMap,
-		MapTextures:  textures,
-		ScreenWidth:  640,
-		ScreenHeight: 480,
+	wallTextures, err := assets.LoadWallTextures(loadedLevel.WallTextureFiles)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	ebiten.SetWindowSize(game.ScreenWidth, game.ScreenHeight)
+	enemyTextures, err := assets.LoadSpriteTextures(loadedLevel.EnemySpriteFiles)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	if err = ebiten.RunGame(game); err != nil {
+	floorTexture, err := assets.LoadTexture(loadedLevel.FloorTextureFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	skyTexture, err := assets.LoadTexture(loadedLevel.SkyTextureFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	gameEnemies := make([]entity.Enemy, 0, len(loadedLevel.EnemySpawns))
+	for _, spawn := range loadedLevel.EnemySpawns {
+		sprite := enemyTextures[spawn.SpriteKey]
+		gameEnemies = append(gameEnemies, entity.Enemy{
+			X:      spawn.X,
+			Y:      spawn.Y,
+			Sprite: sprite,
+		})
+	}
+
+	gameInstance := &game.Game{
+		Player: player.Player{
+			X:        loadedLevel.PlayerSpawnX,
+			Y:        loadedLevel.PlayerSpawnY,
+			Angle:    0,
+			Speed:    0.2,
+			Rotation: 0.15,
+		},
+		Drawer: drawer.Drawer{
+			Step:    0.02,
+			MaxDist: 30,
+		},
+		WorldMap:     loadedLevel.WorldMap,
+		WallTextures: wallTextures,
+		FloorTexture: floorTexture,
+		SkyTexture:   skyTexture,
+		Enemies:      gameEnemies,
+		ScreenWidth:  960,
+		ScreenHeight: 540,
+	}
+
+	ebiten.SetWindowSize(gameInstance.ScreenWidth, gameInstance.ScreenHeight)
+	ebiten.SetWindowTitle("doom")
+
+	if err = ebiten.RunGame(gameInstance); err != nil {
 		log.Fatal(err)
 	}
 }
