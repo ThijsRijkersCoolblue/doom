@@ -13,7 +13,7 @@ func (game *Game) drawEnemies(screen *ebiten.Image) {
 	}
 
 	for _, enemy := range game.Enemies {
-		if enemy.Sprite == nil {
+		if !enemy.Alive || enemy.Sprite == nil {
 			continue
 		}
 

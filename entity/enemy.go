@@ -6,4 +6,5 @@ type Enemy struct {
 	X      float64
 	Y      float64
 	Sprite *ebiten.Image
+	Alive  bool
 }

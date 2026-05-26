@@ -1,6 +1,7 @@
 package game
 
 import (
+	"doom/assets"
 	"doom/drawer"
 	"doom/entity"
 	"doom/player"
@@ -15,6 +16,9 @@ type Game struct {
 	WallTextures map[int]*ebiten.Image
 	FloorTexture *ebiten.Image
 	SkyTexture   *ebiten.Image
+	UIAssets     *assets.UIAssets
+	UI           UIState
+	Weapon       WeaponState
 	Enemies      []entity.Enemy
 	DepthBuffer  []float64
 	ScreenWidth  int
@@ -24,6 +28,8 @@ type Game struct {
 func (game *Game) Update() error {
 	game.rotatePlayer()
 	game.movePlayer()
+	game.updateUIState()
+	game.updateWeapon()
 
 	return nil
 }
@@ -33,6 +39,8 @@ func (game *Game) Draw(screen *ebiten.Image) {
 	game.drawBackground(screen)
 	game.drawWalls(screen)
 	game.drawEnemies(screen)
+	game.drawWeapon(screen)
+	game.drawUI(screen)
 }
 
 func (game *Game) Layout(_, _ int) (int, int) {
