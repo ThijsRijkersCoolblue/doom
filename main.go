@@ -1,10 +1,10 @@
 package main
 
 import (
+	"doom/assets"
 	"doom/drawer"
 	"doom/game"
 	"doom/player"
-	"image/color"
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -22,12 +22,15 @@ var worldMap = [][]int{
 	{1, 1, 1, 1, 1, 1, 1, 1},
 }
 
-var wallColors = map[int]color.RGBA{
-	1: {R: 255, G: 165, B: 0, A: 255}, // Orange
-	2: {R: 0, G: 0, B: 255, A: 255},   // Blue
-}
-
 func main() {
+	textures, err := assets.LoadWallTextures(map[int]string{
+		1: "assets/player/PLAYA1.png",
+		2: "assets/monsters/SPOS/SPOSA1.png",
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	game := &game.Game{
 		Player: player.Player{
 			X:        3.5,
@@ -41,14 +44,14 @@ func main() {
 			MaxDist: 20,
 		},
 		WorldMap:     worldMap,
-		MapColors:    wallColors,
+		MapTextures:  textures,
 		ScreenWidth:  640,
 		ScreenHeight: 480,
 	}
 
 	ebiten.SetWindowSize(game.ScreenWidth, game.ScreenHeight)
 
-	if err := ebiten.RunGame(game); err != nil {
+	if err = ebiten.RunGame(game); err != nil {
 		log.Fatal(err)
 	}
 }
