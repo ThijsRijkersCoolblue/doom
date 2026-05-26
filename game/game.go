@@ -28,6 +28,7 @@ type Game struct {
 func (game *Game) Update() error {
 	game.rotatePlayer()
 	game.movePlayer()
+	game.updateEnemies()
 	game.updateUIState()
 	game.updateWeapon()
 

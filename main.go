@@ -52,10 +52,14 @@ func main() {
 	for _, spawn := range loadedLevel.EnemySpawns {
 		sprite := enemyTextures[spawn.SpriteKey]
 		gameEnemies = append(gameEnemies, entity.Enemy{
-			X:      spawn.X,
-			Y:      spawn.Y,
-			Sprite: sprite,
-			Alive:  true,
+			X:              spawn.X,
+			Y:              spawn.Y,
+			Sprite:         sprite,
+			Alive:          true,
+			Speed:          0.03,
+			AttackRange:    1.2,
+			AttackCooldown: 45,
+			AttackDamage:   8,
 		})
 	}
 
@@ -65,7 +69,7 @@ func main() {
 			Y:        loadedLevel.PlayerSpawnY,
 			Angle:    0,
 			Speed:    0.2,
-			Rotation: 0.06,
+			Rotation: 0.08,
 		},
 		Drawer: drawer.Drawer{
 			Step:    0.02,
