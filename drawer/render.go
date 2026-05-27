@@ -5,12 +5,15 @@ import "github.com/hajimehoshi/ebiten/v2"
 func DrawTexturedColumn(
 	screen *ebiten.Image,
 	screenX int,
-	wallHeight int,
+	topY int,
+	bottomY int,
+	clipTop int,
+	clipBottom int,
 	screenHeight int,
 	texture *ebiten.Image,
 	wallX float64,
 ) {
-	if wallHeight <= 0 || texture == nil {
+	if texture == nil {
 		return
 	}
 
@@ -19,23 +22,26 @@ func DrawTexturedColumn(
 		return
 	}
 
-	startY, endY := visibleWallRange(wallHeight, screenHeight)
+	startY, endY := visibleWallRange(topY, bottomY, clipTop, clipBottom, screenHeight)
 	if startY >= endY {
 		return
 	}
 
 	textureX := textureXCoordinate(wallX, textureWidth)
-	visibleHeight := endY - startY
+	wallHeight := bottomY - topY
+	if wallHeight <= 0 {
+		return
+	}
 
 	for screenY := startY; screenY < endY; screenY++ {
-		textureY := textureYCoordinate(screenY, startY, visibleHeight, textureHeight)
+		textureY := textureYCoordinate(screenY, topY, wallHeight, textureHeight)
 		screen.Set(screenX, screenY, texture.At(textureX, textureY))
 	}
 }
 
-func visibleWallRange(wallHeight, screenHeight int) (int, int) {
-	startY := (screenHeight - wallHeight) / 2
-	endY := startY + wallHeight
+func visibleWallRange(topY, bottomY, clipTop, clipBottom, screenHeight int) (int, int) {
+	startY := maxInt(topY, clipTop)
+	endY := minInt(bottomY, clipBottom)
 
 	if startY < 0 {
 		startY = 0
@@ -45,6 +51,22 @@ func visibleWallRange(wallHeight, screenHeight int) (int, int) {
 	}
 
 	return startY, endY
+}
+
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+
+	return b
+}
+
+func minInt(a, b int) int {
+	if a < b {
+		return a
+	}
+
+	return b
 }
 
 func textureXCoordinate(wallX float64, textureWidth int) int {

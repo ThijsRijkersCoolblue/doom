@@ -29,7 +29,14 @@ func (game *Game) drawEnemies(screen *ebiten.Image) {
 			continue
 		}
 
-		projectedSize := int(float64(game.ScreenHeight) / distance)
+		enemyFloor := game.currentSectorFloor()
+		enemySector := game.findSectorID(enemy.X, enemy.Y)
+		if enemySector >= 0 && enemySector < len(game.Sectors) {
+			enemyFloor = game.Sectors[enemySector].FloorHeight
+		}
+
+		top, bottom := game.projectWallSpan(enemyFloor+game.EnemyHeight, enemyFloor, distance)
+		projectedSize := bottom - top
 		if projectedSize <= 0 {
 			continue
 		}
@@ -37,8 +44,6 @@ func (game *Game) drawEnemies(screen *ebiten.Image) {
 		screenCenter := game.ScreenWidth / 2
 		screenX := int((angle/(fieldOfView/2))*float64(screenCenter) + float64(screenCenter))
 		left := screenX - projectedSize/2
-		top := (game.ScreenHeight - projectedSize) / 2
-
 		game.drawEnemySprite(screen, enemy.Sprite, left, top, projectedSize, distance)
 	}
 }
@@ -63,6 +68,12 @@ func (game *Game) drawEnemySprite(screen, sprite *ebiten.Image, left, top, size 
 		for spriteY := 0; spriteY < size; spriteY++ {
 			screenY := top + spriteY
 			if screenY < 0 || screenY >= game.ScreenHeight {
+				continue
+			}
+			if game.ClipTop[screenX] >= 0 && distance > game.ClipDistance[screenX] && screenY >= game.ClipTop[screenX] {
+				continue
+			}
+			if game.ClipBottom[screenX] >= 0 && distance > game.ClipDistance[screenX] && screenY <= game.ClipBottom[screenX] {
 				continue
 			}
 

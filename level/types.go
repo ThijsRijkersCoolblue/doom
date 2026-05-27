@@ -1,5 +1,7 @@
 package level
 
+import "doom/world"
+
 type EnemySpawn struct {
 	X         float64
 	Y         float64
@@ -7,9 +9,13 @@ type EnemySpawn struct {
 }
 
 type Level struct {
-	WorldMap          [][]int
+	Vertices          []world.Vertex
+	Linedefs          []world.Linedef
+	Sectors           []world.Sector
+	EnemyVisualHeight float64
 	PlayerSpawnX      float64
 	PlayerSpawnY      float64
+	PlayerSector      int
 	WallTextureFiles  map[int]string
 	EnemySpriteFiles  map[string]string
 	FloorTextureFile  string

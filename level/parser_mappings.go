@@ -51,6 +51,30 @@ func parseSinglePath(line, expectedKey string, output *string) error {
 	return nil
 }
 
+func parseEnemyHeight(line string, level *Level) error {
+	parts := strings.SplitN(line, "=", 2)
+	if len(parts) != 2 {
+		return fmt.Errorf("invalid enemy_size mapping: %s", line)
+	}
+
+	key := strings.TrimSpace(parts[0])
+	if key != "height" {
+		return fmt.Errorf("expected key height, got: %s", key)
+	}
+
+	value := strings.TrimSpace(parts[1])
+	height, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return fmt.Errorf("invalid enemy height: %s", line)
+	}
+	if height <= 0 {
+		return fmt.Errorf("enemy height must be positive: %s", line)
+	}
+
+	level.EnemyVisualHeight = height
+	return nil
+}
+
 func parseSpawnLine(line string, level *Level) error {
 	parts := strings.Fields(line)
 	if len(parts) < 3 {
@@ -69,8 +93,18 @@ func parseSpawnLine(line string, level *Level) error {
 	}
 
 	if kind == "player" {
+		sector := 0
+		if len(parts) >= 4 {
+			parsedSector, sectorErr := strconv.Atoi(parts[3])
+			if sectorErr != nil {
+				return fmt.Errorf("invalid player spawn sector: %s", line)
+			}
+			sector = parsedSector
+		}
+
 		level.PlayerSpawnX = x
 		level.PlayerSpawnY = y
+		level.PlayerSector = sector
 		level.PlayerSpawnLoaded = true
 		return nil
 	}

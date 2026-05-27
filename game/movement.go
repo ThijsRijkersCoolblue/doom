@@ -66,12 +66,29 @@ func (game *Game) canMoveTo(x, y float64) bool {
 }
 
 func (game *Game) isBlocked(x, y float64) bool {
-	mapX := int(x)
-	mapY := int(y)
-
-	if mapY < 0 || mapY >= len(game.WorldMap) || mapX < 0 || mapX >= len(game.WorldMap[0]) {
+	game.ensureSectorCache()
+	sectorID := game.findSectorID(x, y)
+	if sectorID < 0 {
 		return true
 	}
 
-	return game.WorldMap[mapY][mapX] > 0
+	for _, line := range game.Linedefs {
+		if line.BackSector >= 0 {
+			continue
+		}
+		if line.StartVertex < 0 || line.StartVertex >= len(game.Vertices) {
+			continue
+		}
+		if line.EndVertex < 0 || line.EndVertex >= len(game.Vertices) {
+			continue
+		}
+
+		start := game.Vertices[line.StartVertex]
+		end := game.Vertices[line.EndVertex]
+		if distanceToSegment(x, y, start.X, start.Y, end.X, end.Y) < playerRadius*0.5 {
+			return true
+		}
+	}
+
+	return false
 }

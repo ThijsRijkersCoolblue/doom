@@ -9,15 +9,20 @@ func isSectionHeader(line string) bool {
 	return strings.HasPrefix(line, "[") && strings.HasSuffix(line, "]")
 }
 
-func processSectionLine(section, line string, level *Level, mapLines *[]string) error {
+func processSectionLine(section, line string, level *Level) error {
 	switch section {
-	case sectionMap:
-		*mapLines = append(*mapLines, line)
-		return nil
+	case sectionVertices:
+		return parseVertexLine(line, level)
+	case sectionSectors:
+		return parseSectorLine(line, level)
+	case sectionLinedefs:
+		return parseLinedefLine(line, level)
 	case sectionWalls:
 		return parseWallMapping(line, level.WallTextureFiles)
 	case sectionEnemies:
 		return parseEnemySpriteMapping(line, level.EnemySpriteFiles)
+	case sectionEnemySize:
+		return parseEnemyHeight(line, level)
 	case sectionFloors:
 		return parseSinglePath(line, "floor", &level.FloorTextureFile)
 	case sectionSky:
