@@ -1,6 +1,7 @@
 package game
 
 import (
+	"image/color"
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -49,34 +50,92 @@ func (game *Game) drawFloor(screen *ebiten.Image) {
 		return
 	}
 
-	leftRayAngle := game.Player.Angle - fieldOfView/2
-	rightRayAngle := game.Player.Angle + fieldOfView/2
-	rayDirX0 := math.Cos(leftRayAngle)
-	rayDirY0 := math.Sin(leftRayAngle)
-	rayDirX1 := math.Cos(rightRayAngle)
-	rayDirY1 := math.Sin(rightRayAngle)
-	posZ := 0.5 * float64(game.ScreenHeight)
+	game.ensureRayDirectionCache()
+	game.ensureSectorCache()
 
-	for y := halfHeight; y < game.ScreenHeight; y++ {
-		rowOffset := y - halfHeight
-		if rowOffset == 0 {
+	sampleStep := 2
+	projectionScale := float64(game.ScreenHeight) * 0.5
+	screenCenter := float64(game.ScreenHeight) * 0.5
+
+	for y := halfHeight + 1; y < game.ScreenHeight; y += sampleStep {
+		denominator := float64(y) - screenCenter
+		if denominator <= 0 {
 			continue
 		}
 
-		rowDistance := posZ / float64(rowOffset)
-		stepX := rowDistance * (rayDirX1 - rayDirX0) / float64(game.ScreenWidth)
-		stepY := rowDistance * (rayDirY1 - rayDirY0) / float64(game.ScreenWidth)
+		for x := 0; x < game.ScreenWidth; x += sampleStep {
+			worldX, worldY, ok := game.floorWorldPointForPixel(
+				game.RayDirXCache[x],
+				game.RayDirYCache[x],
+				denominator,
+				projectionScale,
+			)
+			if !ok {
+				continue
+			}
 
-		worldX := game.Player.X + rowDistance*rayDirX0
-		worldY := game.Player.Y + rowDistance*rayDirY0
-
-		for x := 0; x < game.ScreenWidth; x++ {
 			textureX := floorTextureCoordinate(worldX, floorWidth)
 			textureY := floorTextureCoordinate(worldY, floorHeight)
-			screen.Set(x, y, game.FloorTexture.At(textureX, textureY))
+			pixel := game.FloorTexture.At(textureX, textureY)
 
-			worldX += stepX
-			worldY += stepY
+			drawFloorBlock(screen, x, y, sampleStep, game.ScreenWidth, game.ScreenHeight, pixel)
+		}
+	}
+}
+
+func (game *Game) floorWorldPointForPixel(rayDirX, rayDirY, denominator, projectionScale float64) (float64, float64, bool) {
+	floorHeight := game.currentSectorFloor()
+
+	for i := 0; i < 2; i++ {
+		heightDelta := game.Player.Z - floorHeight
+		if heightDelta <= minWallDistance {
+			return 0, 0, false
+		}
+
+		distance := (heightDelta * projectionScale) / denominator
+		if distance <= minWallDistance {
+			return 0, 0, false
+		}
+
+		worldX := game.Player.X + rayDirX*distance
+		worldY := game.Player.Y + rayDirY*distance
+
+		sectorID := game.findSectorID(worldX, worldY)
+		if sectorID < 0 || sectorID >= len(game.Sectors) {
+			return worldX, worldY, true
+		}
+
+		nextFloor := game.Sectors[sectorID].FloorHeight
+		if math.Abs(nextFloor-floorHeight) < minWallDistance {
+			return worldX, worldY, true
+		}
+
+		floorHeight = nextFloor
+	}
+
+	heightDelta := game.Player.Z - floorHeight
+	if heightDelta <= minWallDistance {
+		return 0, 0, false
+	}
+
+	distance := (heightDelta * projectionScale) / denominator
+	worldX := game.Player.X + rayDirX*distance
+	worldY := game.Player.Y + rayDirY*distance
+	return worldX, worldY, true
+}
+
+func drawFloorBlock(screen *ebiten.Image, x, y, step, width, height int, pixel color.Color) {
+	for dy := 0; dy < step; dy++ {
+		sy := y + dy
+		if sy >= height {
+			break
+		}
+		for dx := 0; dx < step; dx++ {
+			sx := x + dx
+			if sx >= width {
+				break
+			}
+			screen.Set(sx, sy, pixel)
 		}
 	}
 }
